@@ -5,14 +5,18 @@ import java.sql.SQLException;
 
 public class Procedures {
 
-    public static void getProductByPartOfName(Connection conn, String part) throws SQLException {
-        CallableStatement callStmt = conn.prepareCall("{call by_name_part(?)}");
-        callStmt.setString(1, part);
+    private Connection conn;
+    private CallableStatement callStmt;
 
-        callStmt.execute();
-        ResultSet rs = callStmt.getResultSet();
+    public void setConn(Connection conn) {
+        this.conn = conn;
+    }
 
-        System.out.println("RESULT FROM by_name_part\n");
+    public void getProductByPartOfName(String part) throws SQLException {
+        ResultSet rs = getResultSetFrom("{call by_name_part(?)}", part);
+
+        System.out.printf("RESULT FROM by_name_part\n%2s | %-20s | %-20s | %s | %-12s | %s\n",
+            "id", "Product Name", "Description", "Weight", "Barcode", "Price");
         while (rs.next()) {
             System.out.printf("%2d | %-20s | %-20s | %.2f | %-12s | %.2f\n",
                     rs.getInt("id"),
@@ -25,4 +29,42 @@ public class Procedures {
 
         callStmt.close();
     }
+
+    public void getByDeliveryNote(String delivNote) throws SQLException {
+        ResultSet rs = getResultSetFrom("{call by_delivery_note_num(?)}", delivNote);
+
+        System.out.printf("RESULT FROM by_delivery_note_num\n%-20s | %-7s | %-20s\n",
+                "Product", "Price", "Buyer");
+        while (rs.next()) {
+            System.out.printf("%-20s | %.2f | %-20s\n",
+                    rs.getString("Product"),
+                    rs.getFloat("Price"),
+                    rs.getString("Buyer"));
+        }
+
+        callStmt.close();
+    }
+
+    private ResultSet getResultSetFrom(String callStr, String... args) throws SQLException {
+        callStmt = conn.prepareCall(callStr);
+
+        int index = 0;
+        for (String arg : args) {
+            callStmt.setString(++index, arg);
+        }
+
+        callStmt.execute();
+        return callStmt.getResultSet();
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
